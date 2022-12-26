@@ -1,4 +1,5 @@
 import express from 'express';
+import {Request, Response } from 'express';
 import bodyParser from 'body-parser';
 import {filterImageFromURL, deleteLocalFiles} from './util/util';
 
@@ -28,7 +29,7 @@ import {filterImageFromURL, deleteLocalFiles} from './util/util';
   //   the filtered image file [!!TIP res.sendFile(filteredpath); might be useful]
 
   /**************************************************************************** */  
-  app.get('/filteredimage/', async (req, res) => {
+  app.get('/filteredimage/', async (req: Request, res:Response) => {
      
     let {image_url} = req.query;
     
@@ -36,18 +37,25 @@ import {filterImageFromURL, deleteLocalFiles} from './util/util';
       return res.status(400).send({error: 'query parameter image_url is required.'});      
     }
 
-    await filterImageFromURL(image_url)
-    .then(image => {
-      res.status(200).sendFile(image, {}, (err) => {
-        deleteLocalFiles([image]);
-      });      
-    });
+    // Get the absolute path of the filtered image stored in the directory
+    let filteredImageAbsolutePath = await filterImageFromURL(image_url) as string;
+
+    // we are not sending any options for this opereation but still declare it explicitly as an empty object
+    let options = {};
+
+    // Return a 200 response with the absolute path of the filtered image
+    res.status(200).sendFile(filteredImageAbsolutePath, options, filteredImageComplete);
   });
   //! END @TODO1
+
+  function filteredImageComplete(filteredImageAbsolutePath: string){
+    // Delete the file from the directory once is competed processing
+    deleteLocalFiles([filteredImageAbsolutePath]);    
+  }
   
   // Root Endpoint
   // Displays a simple message to the user
-  app.get( "/", async ( req, res ) => {
+  app.get( "/", async ( req: Request, res: Response ) => {
     res.send("try GET /filteredimage?image_url={{}}")
   } );
   
